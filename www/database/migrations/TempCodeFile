@@ -1,0 +1,150 @@
+DB::transaction(function () {
+    DB::statement("
+        CREATE TYPE user_type AS ENUM ('teacher', 'student');
+    ");
+
+    DB::statement('
+        CREATE TABLE users
+        (
+            id bigserial primary key not null,
+            name varchar not null,
+            surname varchar not null,
+            student_num varchar null,
+            birth_date date null,
+            email varchar not null,
+            password varchar not null,
+            avatar_img_path varchar not null,
+            email_confirmed boolean not null,
+            user_type user_type not null,
+            created_at timestamp,
+            updated_at timestamp,
+            deleted_at timestamp
+        );
+    ');
+
+    // password 123 in sha1
+    DB::statement("
+        INSERT INTO users(name, surname, email, password, avatar_img_path, email_confirmed, user_type, created_at, updated_at)
+            VALUES ('Machine', 'Learning', 'ml@ml.ml', '40bd001563085fc35165329ea1ff5c5ecbdbbeef' ,'static/images/no_avatar.jpg', true, 'student', current_timestamp, current_timestamp)
+    ");
+});
+
+DB::transaction(function () {
+    DB::statement('
+        CREATE TABLE organization_codes
+        (
+            id bigserial primary key not null,
+            user_id bigint null,
+            name varchar not null,
+            abbreviation varchar not null,
+            reg_code varchar unique not null,
+            used bool not null,
+            created_at timestamp,
+            updated_at timestamp,
+            deleted_at timestamp
+        );
+    ');
+
+    DB::statement('
+        ALTER TABLE organization_codes ADD CONSTRAINT organization_codes_user_id_fk FOREIGN KEY (user_id) REFERENCES users(id);
+    ');
+});
+
+DB::transaction(function () {
+    DB::statement('
+        CREATE TABLE tests
+        (
+            id bigserial primary key not null,
+            user_id bigint not null,
+            name varchar not null,
+            test_pass varchar not null,
+            start_date timestamp null,
+            end_date timestamp null,
+            created_at timestamp,
+            updated_at timestamp,
+            deleted_at timestamp
+        );
+    ');
+
+    DB::statement('
+        ALTER TABLE tests ADD CONSTRAINT tests_user_id_fk FOREIGN KEY (user_id) REFERENCES users(id);
+    ');
+});
+
+
+DB::transaction(function () {
+    DB::statement('
+        CREATE TABLE test_questions
+        (
+            id bigserial primary key not null,
+            test_id bigint not null,
+            question_image_path varchar not null,
+            question varchar not null,
+            created_at timestamp,
+            updated_at timestamp,
+            deleted_at timestamp
+        );
+    ');
+
+    DB::statement('
+        ALTER TABLE test_questions ADD CONSTRAINT test_questions_id_fk FOREIGN KEY (test_id) REFERENCES tests(id);
+    ');
+});
+
+
+DB::transaction(function () {
+    DB::statement("
+        CREATE TYPE user_answer_status_type AS ENUM ('registered', 'not_checked', 'checked');
+    ");
+
+    DB::statement("
+        CREATE TYPE teacher_answer_status_type AS ENUM ('registered', 'finished');
+    ");
+
+    DB::statement('
+        CREATE TABLE test_answers
+        (
+            id bigserial primary key not null,
+            test_id bigint null,
+            user_id bigint null,
+            user_answer_status user_answer_status_type not null,
+            teacher_answer_status teacher_answer_status_type not null,
+            total_score varchar null,
+            created_at timestamp,
+            updated_at timestamp,
+            deleted_at timestamp
+        );
+    ');
+
+    DB::statement('
+        ALTER TABLE test_answers ADD CONSTRAINT test_answers_test_id_fk FOREIGN KEY (test_id) REFERENCES tests(id);
+    ');
+
+    DB::statement('
+        ALTER TABLE test_answers ADD CONSTRAINT test_answers_user_id_fk FOREIGN KEY (user_id) REFERENCES users(id);
+    ');
+});
+
+DB::transaction(function () {
+    DB::statement('
+        CREATE TABLE test_question_answers
+        (
+            id bigserial primary key not null,
+            test_answer_id bigint not null,
+            test_question_id bigint not null,
+            answer_bool bool not null,
+            answer varchar null,
+            created_at timestamp,
+            updated_at timestamp,
+            deleted_at timestamp
+        );
+    ');
+
+    DB::statement('
+        ALTER TABLE test_question_answers ADD CONSTRAINT test_question_answers_test_answer_id_fk FOREIGN KEY (test_answer_id) REFERENCES test_answers(id);
+    ');
+
+    DB::statement('
+        ALTER TABLE test_question_answers ADD CONSTRAINT test_question_answers_test_question_id_fk FOREIGN KEY (test_question_id) REFERENCES test_questions(id);
+    ');
+});
